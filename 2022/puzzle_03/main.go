@@ -12,6 +12,11 @@ type Rucksack struct {
 	duplicates     []Item
 }
 
+func (r Rucksack) Items() []Item {
+	items := append(r.CompartmentOne, r.CompartmentTwo...)
+	return items
+}
+
 const lowercaseShift = int('a') - 1
 const uppercaseShift = int('A') - 27
 
@@ -41,7 +46,16 @@ func main() {
 	}
 
 	value := sumDuplicates(supplies)
-	fmt.Printf("The value of the duplicates is %d\n", value)
+	fmt.Printf("Part1: The value of the duplicates is %d\n", value)
+
+	grouped := groupedSupplies(supplies)
+
+	badgeSum := 0
+	for group := range grouped {
+		badge := findBadge(group)
+		badgeSum += badge.Priority()
+	}
+	fmt.Printf("Part2: The value of the badge is %d\n", badgeSum)
 }
 
 func load(src string) ([]Rucksack, error) {
@@ -146,4 +160,29 @@ func sumDuplicates(supplies []Rucksack) int {
 		}
 	}
 	return sum
+}
+
+func groupedSupplies(supplies []Rucksack) <-chan []Rucksack {
+	grouped := make(chan []Rucksack)
+
+	go func() {
+		for i := 0; i < len(supplies); i += 3 {
+			grouped <- []Rucksack{
+				supplies[i], supplies[i+1], supplies[i+2],
+			}
+		}
+		close(grouped)
+	}()
+	return grouped
+}
+
+func findBadge(group []Rucksack) Item {
+	// find the item that is in all three rucksacks
+	for _, item := range group[0].Items() {
+		if contains(group[1].Items(), item) && contains(group[2].Items(), item) {
+			return item
+		}
+	}
+
+	return Item(0)
 }
